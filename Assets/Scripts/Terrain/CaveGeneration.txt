@@ -1,0 +1,139 @@
+﻿Huge world of caves:
+
+                        float initialNoise = PerlinSimplexNoise.noise(blockX*0.01f, blockY*0.02f, z*0.006f)*0.3f + 0.1f;
+                        initialNoise += PerlinSimplexNoise.noise(blockX*0.005f, blockY*0.005f, z*0.05f)*0.1f + 0.1f;
+                        initialNoise += PerlinSimplexNoise.noise(blockX * 0.1f, blockY * 0.1f, z * 0.05f) * 0.05f + 0.01f;
+
+                        // Cave...so make this block air.
+                        if (initialNoise > 0.2f)
+                        
+
+Decent caves:
+
+                        float initialNoise = PerlinSimplexNoise.noise(blockX * 0.01f, blockY * 0.02f, z * 0.01f) * 0.3f + 0.02f;
+                        initialNoise += PerlinSimplexNoise.noise(blockX * 0.005f, blockY * 0.005f, z * 0.1f) * 0.1f + 0.1f;
+                        initialNoise += PerlinSimplexNoise.noise(blockX * 0.1f, blockY * 0.1f, z * 0.1f) * 0.05f + 0.01f;
+
+                        // Cave...so make this block air.
+                        if (initialNoise > 0.35f)
+                        
+
+
+Nice giant valleys and such:
+
+ /// <summary>
+    /// Generate terrain data for a chunk.
+    /// </summary>
+    /// <param name="chunk"></param>
+    private static void GenerateChunkTerrain(ChunkData chunk)
+    {
+        Debug.Log("Generating terrain for " + chunk);
+        DateTime start = DateTime.Now;
+        for (int x = 0; x < ChunkData.WidthInBlocks; x++)
+        {
+            int blockX = chunk.X*ChunkData.WidthInBlocks + x + (int) (World.NoiseBlockXOffset);
+
+            for (int y = 0; y < ChunkData.HeightInBlocks; y++)
+            {
+                int blockY = chunk.Y*ChunkData.HeightInBlocks + y;
+
+                // our intitial terrain height
+                int groundHeight = (int) GetBlockNoise(blockX, blockY);
+
+                // The bottom of the world should be stone
+                chunk.Blocks[x, y, 0].Type = BlockType.Lava;
+                chunk.Blocks[x, y, 0].LightAmount = 255;
+
+                // The blocks at ground height will be Topsoil
+                chunk.Blocks[x, y, groundHeight].Type = BlockType.TopSoil;
+
+                // Default to sunlit.. for caves
+                bool sunlit = true;
+                float lowerLevelNoise = 32 - PerlinSimplexNoise.noise(blockX*0.005f, blockY*0.005f)*16f;
+                lowerLevelNoise  += PerlinSimplexNoise.noise(blockX*0.01f, blockY*0.01f)*4f;
+                int lowerGroundHeight = (int)lowerLevelNoise;
+                for (int z = ChunkData.DepthInBlocks - 1; z > 0; z--)
+                {
+                    // Or we at or below ground height?
+                    if (z <= groundHeight)
+                    {
+                        // If we are a block below ground height, 
+                        // make it stone
+                        BlockType blockType;
+                        if (z == lowerGroundHeight)
+                        {
+                            blockType = BlockType.TopSoil;
+                        }
+                        else if (z < lowerGroundHeight)
+                        {
+                            blockType = BlockType.Stone;
+                        }
+                        else
+                        {
+
+
+
+
+
+                            // Since we are at or below ground height, let's see if we need to make
+                            // a cave
+                            float initialNoise = PerlinSimplexNoise.noise(blockX*0.01f, blockY*0.01f, z*0.01f)*
+                                                 (0.015f*z) + 0.1f;
+                            initialNoise += PerlinSimplexNoise.noise(blockX*0.01f, blockY*0.01f, z*0.1f)*0.1f + 0.1f;
+                            initialNoise += PerlinSimplexNoise.noise(blockX*0.1f, blockY*0.1f, z*0.1f)*0.05f + 0.01f;
+
+                            // Cave...so make this block air.
+                            if (initialNoise > 0.15f)
+                            {
+                                blockType = BlockType.Air;
+                            }
+                            else
+                            {
+                                // We've placed a block of dirt instead...nothing below us will be sunlit
+                                if (sunlit)
+                                {
+                                    sunlit = false;
+                                    blockType = BlockType.TopSoil;
+                                }
+                                else
+                                {
+                                    blockType = BlockType.Stone;
+                                }
+                            }
+                        }
+
+                        chunk.Blocks[x, y, z].Type = blockType;
+                    }
+
+                    // Is the result of the current block sunlit?
+                    if (sunlit)
+                    {
+                        chunk.Blocks[x, y, z].LightAmount = 255;
+                    }
+                    else
+                    {
+                        chunk.Blocks[x, y, z].LightAmount = 0;
+                    }
+                }
+                if (chunk.Blocks[x,y,1].Type == BlockType.Air)
+                {
+                    chunk.Blocks[x, y, 1].LightAmount = 255;
+                }
+
+            }
+        }
+
+        Debug.Log("Chunk " + chunk + "Terrain Generation took " + (DateTime.Now - start));
+    }
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
